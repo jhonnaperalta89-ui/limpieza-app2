@@ -12,7 +12,6 @@
             padding: 20px;
             color: #333;
         }
-        /* Pantalla de Login */
         #login-overlay {
             position: fixed;
             top: 0;
@@ -69,8 +68,6 @@
             margin-top: 10px;
             display: none;
         }
-
-        /* Panel Principal */
         .admin-container {
             max-width: 1200px;
             margin: 0 auto;
@@ -78,7 +75,7 @@
             padding: 30px;
             border-radius: 12px;
             box-shadow: 0 4px 15px rgba(0,0,0,0.05);
-            display: none; /* Oculto hasta iniciar sesión de forma segura */
+            display: none;
         }
         .admin-header {
             display: flex;
@@ -182,7 +179,6 @@
 </head>
 <body>
 
-    <!-- CAPA DE ACCESO (LOGIN SEGURO CON FIREBASE AUTH) -->
     <div id="login-overlay">
         <div class="login-card">
             <h2>Acceso Administrador</h2>
@@ -193,7 +189,6 @@
         </div>
     </div>
 
-    <!-- PANEL DE ADMINISTRACIÓN -->
     <div class="admin-container" id="panel-principal">
         <div class="admin-header">
             <h1>Panel de Administración - BrillaClean</h1>
@@ -203,8 +198,43 @@
             </div>
         </div>
 
+        <div class="panel-section" style="margin-bottom: 30px; background: #f0fdf4; border-color: #bbf7d0;">
+            <h3 style="color: #065f46;">👥 Gestión de Personal y Sectores</h3>
+            
+            <form id="formEmpleado" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-bottom: 20px;">
+                <input type="text" id="empNombre" placeholder="Nombre completo" required style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                <input type="text" id="empDocumento" placeholder="N° Documento" required style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                <input type="tel" id="empTelefono" placeholder="Teléfono" required style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                <input type="text" id="empCargo" placeholder="Cargo (Ej. Limpieza Profunda)" required style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                <select id="empSector" required style="padding: 8px; border-radius: 6px; border: 1px solid #ccc;">
+                    <option value="">Seleccionar Sector / Zona</option>
+                    <option value="La Serena Norte">La Serena Norte</option>
+                    <option value="La Serena Centro">La Serena Centro</option>
+                    <option value="Coquimbo">Coquimbo</option>
+                    <option value="Avenida del Mar">Avenida del Mar</option>
+                </select>
+                <button type="submit" style="background-color: #065f46; color: white; border: none; padding: 8px 16px; border-radius: 6px; font-weight: bold; cursor: pointer;">Registrar Empleado</button>
+            </form>
+
+            <div style="overflow-x: auto;">
+                <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 6px; overflow: hidden; font-size: 14px;">
+                    <thead>
+                        <tr style="background: #e6f4ea; text-align: left;">
+                            <th style="padding: 10px;">Colaborador</th>
+                            <th style="padding: 10px;">Contacto / Doc</th>
+                            <th style="padding: 10px;">Cargo / Sector</th>
+                            <th style="padding: 10px; text-align: center;">Acceso Web</th>
+                            <th style="padding: 10px; text-align: center;">Acciones</th>
+                        </tr>
+                    </thead>
+                    <tbody id="lista-empleados">
+                        <tr><td colspan="5" style="padding: 10px; color: #666; font-style: italic;">Cargando empleados...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
         <div class="sections-wrapper">
-            <!-- Sección: Pendientes por Aprobar -->
             <div class="panel-section">
                 <h3>⏳ Pendientes por Aprobar</h3>
                 <div id="lista-pendientes">
@@ -212,7 +242,6 @@
                 </div>
             </div>
 
-            <!-- Sección: Historial de Confirmadas -->
             <div class="panel-section">
                 <h3>✅ Historial de Confirmadas</h3>
                 <div id="lista-confirmadas">
@@ -220,7 +249,6 @@
                 </div>
             </div>
 
-            <!-- Sección: Historial Rechazadas -->
             <div class="panel-section">
                 <h3>❌ Historial Rechazadas</h3>
                 <div id="lista-rechazadas">
@@ -230,7 +258,6 @@
         </div>
     </div>
 
-    <!-- Firebase Compat SDKs -->
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
@@ -251,7 +278,6 @@
         }
         const db = firebase.firestore();
 
-        // Función para iniciar sesión de forma segura con Firebase Auth
         function intentarLogin() {
             const emailInput = document.getElementById("login-email").value.trim();
             const passInput = document.getElementById("login-pass").value.trim();
@@ -259,35 +285,109 @@
 
             firebase.auth().signInWithEmailAndPassword(emailInput, passInput)
                 .then((userCredential) => {
-                    // Inicio de sesión exitoso
                     document.getElementById("login-overlay").style.display = "none";
                     document.getElementById("panel-principal").style.display = "block";
                     cargarTodasLasReservas();
+                    cargarEmpleados();
                 })
                 .catch((error) => {
-                    // Error de autenticación
                     console.error(error);
                     errorDiv.style.display = "block";
                 });
         }
 
-        // Mantener la sesión activa automáticamente de forma segura
         firebase.auth().onAuthStateChanged((user) => {
             if (user) {
                 document.getElementById("login-overlay").style.display = "none";
                 document.getElementById("panel-principal").style.display = "block";
                 cargarTodasLasReservas();
+                cargarEmpleados();
             }
         });
 
-        // Función para cerrar sesión con Firebase Auth
         function cerrarSesion() {
             firebase.auth().signOut().then(() => {
                 location.reload();
             });
         }
 
-        // Carga global de reservas desde la colección "reservas"
+        const formEmpleado = document.getElementById("formEmpleado");
+        if (formEmpleado) {
+            formEmpleado.addEventListener("submit", (e) => {
+                e.preventDefault();
+                const nombre = document.getElementById("empNombre").value;
+                const documento = document.getElementById("empDocumento").value;
+                const telefono = document.getElementById("empTelefono").value;
+                const cargo = document.getElementById("empCargo").value;
+                const sector = document.getElementById("empSector").value;
+
+                db.collection("empleados").add({
+                    nombre,
+                    documento,
+                    telefono,
+                    cargo,
+                    sector,
+                    activo: true,
+                    timestamp: firebase.firestore.FieldValue.serverTimestamp()
+                }).then(() => {
+                    alert("¡Empleado registrado con éxito!");
+                    formEmpleado.reset();
+                    cargarEmpleados();
+                }).catch((error) => {
+                    alert("Error al registrar empleado: " + error.message);
+                });
+            });
+        }
+
+        function cargarEmpleados() {
+            const contenedor = document.getElementById("lista-empleados");
+            if (!contenedor) return;
+
+            db.collection("empleados").get().then((querySnapshot) => {
+                contenedor.innerHTML = "";
+                if (querySnapshot.empty) {
+                    contenedor.innerHTML = '<tr><td colspan="5" style="padding: 10px; color: #666; font-style: italic;">No hay empleados registrados.</td></tr>';
+                    return;
+                }
+
+                querySnapshot.forEach((doc) => {
+                    const emp = doc.data();
+                    const idDoc = doc.id;
+                    const estadoTexto = emp.activo ? '<span style="color: green; font-weight: bold;">Permitido</span>' : '<span style="color: red; font-weight: bold;">Bloqueado</span>';
+                    const botonAccesoTexto = emp.activo ? 'Bloquear' : 'Permitir';
+                    const botonAccesoColor = emp.activo ? '#d9534f' : '#28a745';
+
+                    const fila = document.createElement("tr");
+                    fila.style.borderBottom = "1px solid #eee";
+                    fila.innerHTML = 
+                        <td style="padding: 10px;"><b>\</b><br><small>Doc: \</small></td>
+                        <td style="padding: 10px;">📞 \</td>
+                        <td style="padding: 10px;">🛠️ \<br><span style="background: #e2e8f0; padding: 2px 6px; border-radius: 4px; font-size: 11px;">📍 \</span></td>
+                        <td style="padding: 10px; text-align: center;">\</td>
+                        <td style="padding: 10px; text-align: center;">
+                            <button onclick="alternarAccesoEmpleado('\', \)" style="background-color: \; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">\</button>
+                            <button onclick="eliminarEmpleado('\')" style="background-color: #333; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Eliminar</button>
+                        </td>
+                    ;
+                    contenedor.appendChild(fila);
+                });
+            });
+        }
+
+        function alternarAccesoEmpleado(idDoc, estadoActual) {
+            db.collection("empleados").doc(idDoc).update({ activo: !estadoActual }).then(() => {
+                cargarEmpleados();
+            });
+        }
+
+        function eliminarEmpleado(idDoc) {
+            if (confirm("¿Deseas eliminar este empleado del sistema?")) {
+                db.collection("empleados").doc(idDoc).delete().then(() => {
+                    cargarEmpleados();
+                });
+            }
+        }
+
         function cargarTodasLasReservas() {
             const contenedorPendientes = document.getElementById("lista-pendientes");
             const contenedorConfirmadas = document.getElementById("lista-confirmadas");
@@ -316,38 +416,38 @@
                         hayPendientes = true;
                         const tarjeta = document.createElement("div");
                         tarjeta.className = "reserva-card";
-                        tarjeta.innerHTML = `
-                            <p><b>#${idCorto}</b> - ${reserva.nombre || 'Cliente'}</p>
-                            <p>📞 ${reserva.telefono || 'Sin teléfono'}</p>
-                            <p>📅 ${reserva.fecha || 'Sin fecha'} (${reserva.horaInicio || ''} a ${reserva.horaFin || ''})</p>
-                            <p>🛠️ ${reserva.tipoServicio || 'Limpieza'}</p>
-                            <p>📍 ${reserva.direccion || 'Sin dirección'}</p>
+                        tarjeta.innerHTML = 
+                            <p><b>#\</b> - \</p>
+                            <p>📞 \</p>
+                            <p>📅 \ (\ a \)</p>
+                            <p>🛠️ \</p>
+                            <p>📍 \</p>
                             <div class="acciones-card">
-                                <button class="btn-aprobar" onclick="actualizarEstado('${idDoc}', 'Confirmado')">Aceptar</button>
-                                <button class="btn-rechazar" onclick="actualizarEstado('${idDoc}', 'Rechazado')">Rechazar</button>
+                                <button class="btn-aprobar" onclick="actualizarEstado('\', 'Confirmado')">Aceptar</button>
+                                <button class="btn-rechazar" onclick="actualizarEstado('\', 'Rechazado')">Rechazar</button>
                             </div>
-                        `;
+                        ;
                         contenedorPendientes.appendChild(tarjeta);
                     } else if (estado === "confirmado") {
                         hayConfirmadas = true;
                         const tarjeta = document.createElement("div");
                         tarjeta.className = "reserva-card";
-                        tarjeta.innerHTML = `
-                            <p><b>#${idCorto}</b> - ${reserva.nombre || 'Cliente'}</p>
-                            <p>📅 ${reserva.fecha || 'Sin fecha'} (${reserva.horaInicio || ''} a ${reserva.horaFin || ''})</p>
-                            <p>🛠️ ${reserva.tipoServicio || 'Limpieza'}</p>
-                            <button class="btn-eliminar-admin" onclick="eliminarReserva('${idDoc}')">Eliminar</button>
-                        `;
+                        tarjeta.innerHTML = 
+                            <p><b>#\</b> - \</p>
+                            <p>📅 \ (\ a \)</p>
+                            <p>🛠️ \</p>
+                            <button class="btn-eliminar-admin" onclick="eliminarReserva('\')">Eliminar</button>
+                        ;
                         contenedorConfirmadas.appendChild(tarjeta);
                     } else if (estado === "rechazado") {
                         hayRechazadas = true;
                         const tarjeta = document.createElement("div");
                         tarjeta.className = "reserva-card";
-                        tarjeta.innerHTML = `
-                            <p><b>#${idCorto}</b> - ${reserva.nombre || 'Cliente'}</p>
-                            <p>📅 ${reserva.fecha || 'Sin fecha'}</p>
-                            <button class="btn-eliminar-admin" onclick="eliminarReserva('${idDoc}')">Eliminar</button>
-                        `;
+                        tarjeta.innerHTML = 
+                            <p><b>#\</b> - \</p>
+                            <p>📅 \</p>
+                            <button class="btn-eliminar-admin" onclick="eliminarReserva('\')">Eliminar</button>
+                        ;
                         contenedorRechazadas.appendChild(tarjeta);
                     }
                 });
@@ -358,7 +458,6 @@
 
             }).catch((error) => {
                 console.error("Error al cargar reservas: ", error);
-                alert("Error al conectar con la base de datos.");
             });
         }
 

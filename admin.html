@@ -1,0 +1,384 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BrillaClean | Panel de Administración</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f4f7f6;
+            margin: 0;
+            padding: 20px;
+            color: #333;
+        }
+        /* Pantalla de Login */
+        #login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(15, 59, 52, 0.95);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 9999;
+        }
+        .login-card {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 8px 25px rgba(0,0,0,0.2);
+            width: 100%;
+            max-width: 400px;
+            text-align: center;
+        }
+        .login-card h2 {
+            margin-top: 0;
+            color: #0F3B34;
+            margin-bottom: 20px;
+        }
+        .login-card input {
+            width: 100%;
+            padding: 12px;
+            margin: 10px 0;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+            font-size: 14px;
+        }
+        .login-card button {
+            width: 100%;
+            padding: 12px;
+            background-color: #0F3B34;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-weight: bold;
+            cursor: pointer;
+            margin-top: 15px;
+            font-size: 16px;
+        }
+        .login-card button:hover {
+            background-color: #1a5c51;
+        }
+        .error-msg {
+            color: #d9534f;
+            font-size: 13px;
+            margin-top: 10px;
+            display: none;
+        }
+
+        /* Panel Principal */
+        .admin-container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: #fff;
+            padding: 30px;
+            border-radius: 12px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            display: none; /* Oculto hasta iniciar sesión de forma segura */
+        }
+        .admin-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            border-bottom: 2px solid #eee;
+            padding-bottom: 15px;
+            margin-bottom: 25px;
+        }
+        .admin-header h1 {
+            margin: 0;
+            font-size: 24px;
+            color: #0F3B34;
+        }
+        .admin-actions button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-left: 10px;
+        }
+        .btn-web {
+            background-color: #0F3B34;
+            color: white;
+        }
+        .btn-logout {
+            background-color: #d9534f;
+            color: white;
+        }
+        .sections-wrapper {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
+            gap: 20px;
+        }
+        .panel-section {
+            background: #fafbfc;
+            border: 1px solid #e1e4e8;
+            border-radius: 8px;
+            padding: 20px;
+        }
+        .panel-section h3 {
+            margin-top: 0;
+            font-size: 18px;
+            color: #2c3e50;
+            border-bottom: 1px solid #eaeaea;
+            padding-bottom: 10px;
+        }
+        .reserva-card {
+            background: white;
+            border: 1px solid #d1d5db;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 15px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.02);
+        }
+        .reserva-card p {
+            margin: 6px 0;
+            font-size: 14px;
+        }
+        .acciones-card {
+            display: flex;
+            gap: 8px;
+            margin-top: 10px;
+        }
+        .btn-aprobar {
+            background-color: #28a745;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+        }
+        .btn-rechazar {
+            background-color: #ffc107;
+            color: #333;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            flex: 1;
+        }
+        .btn-eliminar-admin {
+            background-color: #d9534f;
+            color: white;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 8px;
+            width: 100%;
+        }
+        .btn-eliminar-admin:hover {
+            background-color: #c9302c;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- CAPA DE ACCESO (LOGIN SEGURO CON FIREBASE AUTH) -->
+    <div id="login-overlay">
+        <div class="login-card">
+            <h2>Acceso Administrador</h2>
+            <input type="email" id="login-email" placeholder="Correo electrónico" required>
+            <input type="password" id="login-pass" placeholder="Contraseña" required>
+            <button type="button" onclick="intentarLogin()">Ingresar</button>
+            <div id="login-error" class="error-msg">Correo o contraseña incorrectos.</div>
+        </div>
+    </div>
+
+    <!-- PANEL DE ADMINISTRACIÓN -->
+    <div class="admin-container" id="panel-principal">
+        <div class="admin-header">
+            <h1>Panel de Administración - BrillaClean</h1>
+            <div class="admin-actions">
+                <button class="btn-web" onclick="window.location.href='index.html'">Ver Web</button>
+                <button class="btn-logout" onclick="cerrarSesion()">Salir</button>
+            </div>
+        </div>
+
+        <div class="sections-wrapper">
+            <!-- Sección: Pendientes por Aprobar -->
+            <div class="panel-section">
+                <h3>⏳ Pendientes por Aprobar</h3>
+                <div id="lista-pendientes">
+                    <p style="color: #666; font-style: italic;">Cargando pendientes...</p>
+                </div>
+            </div>
+
+            <!-- Sección: Historial de Confirmadas -->
+            <div class="panel-section">
+                <h3>✅ Historial de Confirmadas</h3>
+                <div id="lista-confirmadas">
+                    <p style="color: #666; font-style: italic;">Cargando confirmadas...</p>
+                </div>
+            </div>
+
+            <!-- Sección: Historial Rechazadas -->
+            <div class="panel-section">
+                <h3>❌ Historial Rechazadas</h3>
+                <div id="lista-rechazadas">
+                    <p style="color: #666; font-style: italic;">Sin registros rechazados.</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Firebase Compat SDKs -->
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-app-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-auth-compat.js"></script>
+    <script src="https://www.gstatic.com/firebasejs/9.22.2/firebase-firestore-compat.js"></script>
+    
+    <script>
+        const firebaseConfig = {
+            apiKey: "AIzaSyBUPG9N4UPOrLaOiTYLbZ2UB6T5mUbxkLw",
+            authDomain: "brillaclean-b9226.firebaseapp.com",
+            projectId: "brillaclean-b9226",
+            storageBucket: "brillaclean-b9226.firebasestorage.app",
+            messagingSenderId: "509006775314",
+            appId: "1:509006775314:web:1b92b6d31d110b5b4c84cb",
+            measurementId: "G-LCWWKB1Q7B"
+        };
+        
+        if (!firebase.apps.length) {
+            firebase.initializeApp(firebaseConfig);
+        }
+        const db = firebase.firestore();
+
+        // Función para iniciar sesión de forma segura con Firebase Auth
+        function intentarLogin() {
+            const emailInput = document.getElementById("login-email").value.trim();
+            const passInput = document.getElementById("login-pass").value.trim();
+            const errorDiv = document.getElementById("login-error");
+
+            firebase.auth().signInWithEmailAndPassword(emailInput, passInput)
+                .then((userCredential) => {
+                    // Inicio de sesión exitoso
+                    document.getElementById("login-overlay").style.display = "none";
+                    document.getElementById("panel-principal").style.display = "block";
+                    cargarTodasLasReservas();
+                })
+                .catch((error) => {
+                    // Error de autenticación
+                    console.error(error);
+                    errorDiv.style.display = "block";
+                });
+        }
+
+        // Mantener la sesión activa automáticamente de forma segura
+        firebase.auth().onAuthStateChanged((user) => {
+            if (user) {
+                document.getElementById("login-overlay").style.display = "none";
+                document.getElementById("panel-principal").style.display = "block";
+                cargarTodasLasReservas();
+            }
+        });
+
+        // Función para cerrar sesión con Firebase Auth
+        function cerrarSesion() {
+            firebase.auth().signOut().then(() => {
+                location.reload();
+            });
+        }
+
+        // Carga global de reservas desde la colección "reservas"
+        function cargarTodasLasReservas() {
+            const contenedorPendientes = document.getElementById("lista-pendientes");
+            const contenedorConfirmadas = document.getElementById("lista-confirmadas");
+            const contenedorRechazadas = document.getElementById("lista-rechazadas");
+
+            if (contenedorPendientes) contenedorPendientes.innerHTML = "<p style='color: #666;'>Cargando...</p>";
+            if (contenedorConfirmadas) contenedorConfirmadas.innerHTML = "<p style='color: #666;'>Cargando...</p>";
+            if (contenedorRechazadas) contenedorRechazadas.innerHTML = "<p style='color: #666;'>Cargando...</p>";
+
+            db.collection("reservas").get().then((querySnapshot) => {
+                contenedorPendientes.innerHTML = "";
+                contenedorConfirmadas.innerHTML = "";
+                contenedorRechazadas.innerHTML = "";
+
+                let hayPendientes = false;
+                let hayConfirmadas = false;
+                let hayRechazadas = false;
+
+                querySnapshot.forEach((doc) => {
+                    const reserva = doc.data();
+                    const idDoc = doc.id;
+                    const idCorto = idDoc.substring(0, 8).toUpperCase();
+                    const estado = reserva.estado ? reserva.estado.toLowerCase().trim() : "pendiente";
+
+                    if (estado === "pendiente") {
+                        hayPendientes = true;
+                        const tarjeta = document.createElement("div");
+                        tarjeta.className = "reserva-card";
+                        tarjeta.innerHTML = `
+                            <p><b>#${idCorto}</b> - ${reserva.nombre || 'Cliente'}</p>
+                            <p>📞 ${reserva.telefono || 'Sin teléfono'}</p>
+                            <p>📅 ${reserva.fecha || 'Sin fecha'} (${reserva.horaInicio || ''} a ${reserva.horaFin || ''})</p>
+                            <p>🛠️ ${reserva.tipoServicio || 'Limpieza'}</p>
+                            <p>📍 ${reserva.direccion || 'Sin dirección'}</p>
+                            <div class="acciones-card">
+                                <button class="btn-aprobar" onclick="actualizarEstado('${idDoc}', 'Confirmado')">Aceptar</button>
+                                <button class="btn-rechazar" onclick="actualizarEstado('${idDoc}', 'Rechazado')">Rechazar</button>
+                            </div>
+                        `;
+                        contenedorPendientes.appendChild(tarjeta);
+                    } else if (estado === "confirmado") {
+                        hayConfirmadas = true;
+                        const tarjeta = document.createElement("div");
+                        tarjeta.className = "reserva-card";
+                        tarjeta.innerHTML = `
+                            <p><b>#${idCorto}</b> - ${reserva.nombre || 'Cliente'}</p>
+                            <p>📅 ${reserva.fecha || 'Sin fecha'} (${reserva.horaInicio || ''} a ${reserva.horaFin || ''})</p>
+                            <p>🛠️ ${reserva.tipoServicio || 'Limpieza'}</p>
+                            <button class="btn-eliminar-admin" onclick="eliminarReserva('${idDoc}')">Eliminar</button>
+                        `;
+                        contenedorConfirmadas.appendChild(tarjeta);
+                    } else if (estado === "rechazado") {
+                        hayRechazadas = true;
+                        const tarjeta = document.createElement("div");
+                        tarjeta.className = "reserva-card";
+                        tarjeta.innerHTML = `
+                            <p><b>#${idCorto}</b> - ${reserva.nombre || 'Cliente'}</p>
+                            <p>📅 ${reserva.fecha || 'Sin fecha'}</p>
+                            <button class="btn-eliminar-admin" onclick="eliminarReserva('${idDoc}')">Eliminar</button>
+                        `;
+                        contenedorRechazadas.appendChild(tarjeta);
+                    }
+                });
+
+                if (!hayPendientes) contenedorPendientes.innerHTML = "<p style='color: #666; font-style: italic;'>No hay solicitudes pendientes.</p>";
+                if (!hayConfirmadas) contenedorConfirmadas.innerHTML = "<p style='color: #666; font-style: italic;'>No hay reservas confirmadas.</p>";
+                if (!hayRechazadas) contenedorRechazadas.innerHTML = "<p style='color: #666; font-style: italic;'>Sin registros rechazados.</p>";
+
+            }).catch((error) => {
+                console.error("Error al cargar reservas: ", error);
+                alert("Error al conectar con la base de datos.");
+            });
+        }
+
+        function actualizarEstado(idDoc, nuevoEstado) {
+            db.collection("reservas").doc(idDoc).update({ estado: nuevoEstado }).then(() => {
+                cargarTodasLasReservas();
+            }).catch((error) => {
+                alert("Error al actualizar: " + error.message);
+            });
+        }
+
+        function eliminarReserva(idDoc) {
+            if (confirm("¿Estás seguro de que deseas eliminar este registro?")) {
+                db.collection("reservas").doc(idDoc).delete().then(() => {
+                    cargarTodasLasReservas();
+                }).catch((error) => {
+                    alert("Error al eliminar: " + error.message);
+                });
+            }
+        }
+    </script>
+</body>
+</html>
